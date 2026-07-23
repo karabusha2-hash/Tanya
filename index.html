@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Путешественник</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#131120;
+    --bg-soft:#1a1728;
+    --card:#1f1b30;
+    --card-border:#332c4a;
+    --text:#ebe7f3;
+    --text-muted:#948fac;
+    --accent:#b78cf0;
+    --accent-2:#8f6fe0;
+    --accent-soft:rgba(183,140,240,.15);
+    --accent-dim:rgba(183,140,240,.5);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 20% -10%, rgba(143,111,224,.16) 0%, transparent 60%),
+      radial-gradient(ellipse 700px 500px at 90% 110%, rgba(183,140,240,.10) 0%, transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px 16px;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  #particles{
+    position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .particle{
+    position:absolute;
+    width:3px; height:3px;
+    background:var(--accent);
+    border-radius:50%;
+    opacity:.35;
+    filter:blur(.3px);
+    animation:drift linear infinite;
+  }
+  @keyframes drift{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    10%{ opacity:.5; }
+    90%{ opacity:.4; }
+    100%{ transform:translateY(-120vh) translateX(20px); opacity:0; }
+  }
+
+  .app{
+    width:100%;
+    max-width:560px;
+    min-height:70vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    z-index:1;
+  }
+
+  .path-wrap{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:36px;
+    opacity:.9;
+  }
+  .path-track{
+    flex:1;
+    height:2px;
+    background:linear-gradient(to right, var(--accent-dim), rgba(255,255,255,.03));
+    position:relative;
+    border-radius:2px;
+    overflow:visible;
+  }
+  .path-fill{
+    position:absolute; left:0; top:0; bottom:0;
+    background:linear-gradient(to right, var(--accent-2), var(--accent));
+    border-radius:2px;
+    transition:width 1s cubic-bezier(.4,0,.2,1);
+  }
+  .path-glow{
+    position:absolute; top:50%; width:9px; height:9px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 14px 4px var(--accent-soft), 0 0 4px 1px var(--accent);
+    transform:translate(-50%,-50%);
+    transition:left 1s cubic-bezier(.4,0,.2,1);
+  }
+  .path-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 12px 3px var(--accent-soft);
+    animation:pulse 2.4s ease-in-out infinite;
+    flex-shrink:0;
+    cursor:default;
+    user-select:none;
+  }
+  @keyframes pulse{
+    0%,100%{ transform:scale(1); opacity:1; }
+    50%{ transform:scale(1.5); opacity:.6; }
+  }
+  .day-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+
+  #sceneRoot{ flex:1; display:flex; flex-direction:column; }
+
+  .chapter-enter{
+    position:relative;
+    padding-top:2px;
+    margin-bottom:22px;
+  }
+  .title-line{
+    height:1px;
+    width:0;
+    background:linear-gradient(to right, var(--accent), transparent);
+    margin-bottom:14px;
+    animation:lineGrow .7s ease forwards;
+  }
+  @keyframes lineGrow{ to{ width:64px; } }
+  h1.chapter-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    color:var(--text);
+    opacity:0;
+    animation:titleFade .6s ease forwards .25s;
+  }
+  @keyframes titleFade{ to{ opacity:1; transform:translateY(0); } from{ transform:translateY(4px); } }
+
+  .scene{ animation:sceneFade .5s ease; }
+  @keyframes sceneFade{ from{opacity:0; transform:translateY(8px) scale(.995);} to{opacity:1; transform:translateY(0) scale(1);} }
+
+  .indicator-line{
+    display:flex;
+    gap:12px;
+    margin-bottom:14px;
+    align-items:flex-start;
+  }
+  .indicator-dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 10px 2px var(--accent-soft);
+    margin-top:8px;
+    flex-shrink:0;
+  }
+  .indicator-dot.typing{ animation:pulse 1s ease-in-out infinite; }
+  .line-text{
+    font-size:16.5px;
+    line-height:1.65;
+    white-space:pre-wrap;
+  }
+  .line-text.log{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13.5px;
+    color:var(--accent);
+    letter-spacing:.01em;
+  }
+  .cursor{
+    display:inline-block;
+    width:2px; height:1em;
+    background:var(--accent);
+    margin-left:1px;
+    vertical-align:-2px;
+    animation:blink 1s step-start infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .actions{
+    margin-top:28px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    animation:sceneFade .5s ease;
+  }
+  .btn{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    padding:14px 18px;
+    border-radius:10px;
+    cursor:pointer;
+    text-align:left;
+    transition:border-color .2s, background .2s, transform .15s;
+  }
+  .btn:hover{ border-color:var(--accent-dim); background:#241f38; transform:translateY(-1px); }
+  .btn:active{ transform:translateY(0); }
+  .btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .btn.primary{
+    background:var(--accent-soft);
+    border-color:var(--accent-dim);
+    color:var(--accent);
+    font-weight:500;
+  }
+  .btn.primary:hover{ background:rgba(183,140,240,.24); }
+
+  .video-card{
+    border:1px solid var(--card-border);
+    background:var(--card);
+    border-radius:14px;
+    overflow:hidden;
+    margin:18px 0 8px 0;
+    transform-origin:top center;
+    animation:unfold .55s cubic-bezier(.2,.8,.3,1);
+  }
+  @keyframes unfold{
+    0%{ transform:rotateX(-12deg) scaleY(.9); opacity:0; }
+    100%{ transform:rotateX(0) scaleY(1); opacity:1; }
+  }
+  .video-frame{
+    aspect-ratio:16/10;
+    background:
+      repeating-linear-gradient(135deg, #1a1728 0 14px, #201c30 14px 28px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    cursor:pointer;
+    overflow:hidden;
+  }
+  .video-frame::before{
+    content:'';
+    position:absolute; inset:0;
+    background:radial-gradient(circle at 50% 50%, rgba(183,140,240,.10), transparent 70%);
+    animation:shimmer 4s ease-in-out infinite;
+  }
+  @keyframes shimmer{ 0%,100%{opacity:.5;} 50%{opacity:1;} }
+  .video-frame.watched{ cursor:default; }
+  .play-btn{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 8px rgba(183,140,240,.12);
+    transition:transform .2s;
+    position:relative; z-index:1;
+  }
+  .video-frame:hover .play-btn{ transform:scale(1.08); }
+  .play-btn svg{ margin-left:3px; }
+  .video-meta{
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .video-name{ font-weight:600; font-size:14.5px; }
+  .video-role{ font-size:12.5px; color:var(--text-muted); }
+  .video-status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+  }
+  .placeholder-note{
+    padding:10px 16px 16px 16px;
+    font-size:12px;
+    color:var(--text-muted);
+    border-top:1px dashed var(--card-border);
+  }
+
+  .task-box{
+    margin-top:20px;
+    border:1px solid var(--card-border);
+    background:var(--card);
+    border-radius:12px;
+    padding:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .task-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--accent);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    margin-bottom:8px;
+  }
+  .task-desc{ font-size:14.5px; line-height:1.6; color:var(--text); margin-bottom:14px; }
+  .code-row{ display:flex; gap:8px; }
+  .code-input{
+    flex:1;
+    background:var(--bg-soft);
+    border:1px solid var(--card-border);
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    font-size:15px;
+    padding:12px 14px;
+    border-radius:8px;
+  }
+  .code-input:focus{ outline:none; border-color:var(--accent-dim); }
+  .code-error{ font-size:12.5px; color:#e08a9a; margin-top:8px; display:none; }
+
+  .spark{
+    position:absolute;
+    width:5px; height:5px;
+    border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 8px 2px var(--accent-soft);
+    pointer-events:none;
+    animation:sparkOut .9s ease-out forwards;
+  }
+  @keyframes sparkOut{
+    0%{ transform:translate(0,0) scale(1); opacity:1; }
+    100%{ transform:var(--sp-t) scale(.2); opacity:0; }
+  }
+
+  .wait-screen{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:22px;
+    padding:40px 0;
+  }
+  .breathing-wrap{
+    position:relative;
+    width:80px; height:80px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ring{
+    position:absolute;
+    border:1px solid var(--accent-dim);
+    border-radius:50%;
+    animation:ringExpand 3.2s ease-out infinite;
+    opacity:0;
+  }
+  .ring:nth-child(2){ animation-delay:1.05s; }
+  .ring:nth-child(3){ animation-delay:2.1s; }
+  @keyframes ringExpand{
+    0%{ width:14px; height:14px; opacity:.7; }
+    100%{ width:80px; height:80px; opacity:0; }
+  }
+  .breathing-dot{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 24px 6px var(--accent-soft);
+    animation:breathe 3.2s ease-in-out infinite;
+    position:relative; z-index:1;
+  }
+  @keyframes breathe{
+    0%,100%{ transform:scale(.8); opacity:.7; }
+    50%{ transform:scale(1.25); opacity:1; }
+  }
+  .countdown{
+    font-family:'JetBrains Mono',monospace;
+    font-size:24px;
+    color:var(--accent);
+    letter-spacing:.06em;
+  }
+  .countdown-label{
+    font-size:12px;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .archive-item{
+    border-left:2px solid var(--accent-dim);
+    padding:8px 0 8px 14px;
+    margin-bottom:14px;
+    font-size:14.5px;
+    line-height:1.55;
+    opacity:0;
+    animation:archiveIn .6s ease forwards;
+  }
+  @keyframes archiveIn{ from{opacity:0; transform:translateX(-6px);} to{opacity:1; transform:translateX(0);} }
+  .archive-author{ color:var(--accent); font-family:'JetBrains Mono',monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:3px;}
+  .archive-text{ color:var(--text-muted); font-style:italic; }
+
+  .operator-panel{
+    margin-top:24px;
+    padding-top:16px;
+    border-top:1px dashed var(--card-border);
+    display:flex; flex-direction:column; gap:10px;
+    animation:sceneFade .4s ease;
+  }
+  .operator-hint{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-muted);
+  }
+
+  ::selection{ background:var(--accent-soft); }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<div class="app" id="app">
+  <div class="path-wrap">
+    <div class="path-dot" id="pathDot"></div>
+    <div class="path-track">
+      <div class="path-fill" id="pathFill" style="width:0%"></div>
+      <div class="path-glow" id="pathGlow" style="left:0%"></div>
+    </div>
+    <div class="day-label" id="dayLabel">День 1</div>
+  </div>
+  <div id="sceneRoot"></div>
+</div>
+
+<script>
+/* ============================================================
+   НАСТРОЙКИ — заполнить материалами позже
+   ============================================================ */
+
+const FRIENDS = {
+  katya1:  { name:'Катя', role:'лучшая подруга', videoSrc:'videos/katya1.mp4' },
+  natasha: { name:'Наташа', role:'', videoSrc:'videos/natasha.mp4' },
+  nikita:  { name:'Кирилл', role:'', videoSrc:'videos/kirill.mp4' },
+  grisha:  { name:'Гриша', role:'', videoSrc:'videos/grisha.mp4' },
+  katya_g: { name:'Катя Г.', role:'', videoSrc:'videos/katya_g.mp4' },
+  denis:   { name:'Денис', role:'', videoSrc:'videos/denis.mp4' },
+  katya2:  { name:'Катя', role:'финальное послание', videoSrc:'videos/katya2.mp4' },
+};
+
+const CODES = { task1:'МАНГАЛ', task2:'БАНЯ', task3:'ТОСТ' };
+
+// Сколько длится "сон" Путешественника между Днём 1 и Днём 2
+const SLEEP_DURATION_HOURS = 8;
+
+/* ============================================================
+   СЦЕНЫ
+   ============================================================ */
+const SCENES = [
+  { id:'wake', day:1, type:'text', title:null, lines:[
+    {t:'...'},
+    {t:'Кто-то есть?'},
+    {t:'Ага. Есть.'},
+    {t:'Записал: связь установлена.', log:true},
+    {t:'Меня зовут... секунду.\nКажется, у меня пока нет имени.\nСтранно. У всех остальных, кого я видел по дороге,\nбыли имена, написанные прямо на них.\nНа мне — нет.'},
+    {t:'Ты первая, кто это читает.\nЗначит, ты мне поможешь.'},
+  ], actions:[{label:'Помочь с чем?', next:'ch1'}] },
+
+  { id:'ch1', day:1, type:'text', title:'Глава 1 · Приземление', lines:[
+    {t:'Меня привезли сюда очень долгой дорогой.\nЯ не помню, откуда я родом — помню только,\nчто там таких, как я, много. Стоят рядами. Ждут.'},
+    {t:'А потом дорога — и вот я здесь.'},
+    {t:'Я не понимаю, где «здесь».\nНо мой индикатор — вот эта точка внутри меня —\nпочему-то горит теплее, чем обычно.\nКак будто я близко к чему-то важному.'},
+    {t:'Мне нужно найти Дом.\nКажется, это единственное, что я точно знаю о своей задаче.'},
+    {t:'Ты ведь знаешь, что такое Дом?'},
+  ], actions:[
+    {label:'Дом — это где живут', next:'ch1b'},
+    {label:'Дом — это где тепло', next:'ch1b'},
+  ]},
+
+  { id:'ch1b', day:1, type:'text', title:null, lines:[
+    {t:'Записал оба варианта. Буду проверять по дороге.', log:true},
+  ], actions:[{label:'Идти дальше', next:'ch2'}]},
+
+  { id:'ch2', day:1, type:'text', title:'Глава 2 · Первый вопрос', lines:[
+    {t:'Пока шёл — вернее, пока меня несли, но это долго объяснять —\nя задавал один и тот же вопрос всем, кто попадался:\n«Где ваш Дом?»'},
+    {t:'Мне показывали стены. Показывали крыши.\nОдин раз мне показали холодильник — почему-то с гордостью.'},
+    {t:'Что-то во всём этом не сходится.\nСтены есть у многих мест. А Дом почему-то не у всех.'},
+    {t:'Мне сказали: тут неподалёку живёт человек,\nкоторый знает интересные факты о Доме.\nЕё зовут Катя.'},
+    {t:'Хочешь, послушаем, что она скажет?'},
+  ], actions:[{label:'Послушать Катю', next:'video1'}]},
+
+  { id:'video1', day:1, type:'video', friend:'katya1',
+    intro:'Индикатор ведёт меня к первому человеку.',
+    reaction:[
+      {t:'Записал.', log:true},
+      {t:'Значит, Дом — это не только стены.\nЭто ещё и кто-то, кто помнит, как ты пьёшь чай.'},
+      {t:'Кажется, это очень важная особенность людей.\nБуду проверять дальше.'},
+    ], next:'task1'},
+
+  { id:'task1', day:1, type:'task', label:'Задание 1', code:'task1',
+    desc:'Покажи мне то, что греет не только мясо,\nно и душу тех, кто проводит за этим местом\nни один час, чтобы все были сыты.\n\nВозле этого места лежит конверт — код внутри.',
+    next:'ch4'},
+
+  { id:'ch4', day:1, type:'text', title:'Глава 4', lines:[
+    {t:'Индикатор снова потеплел.\nМне подсказали — здесь есть человек, который умеет\nзаботиться так, что это почти незаметно, пока не понимаешь,\nсколько всего она успела сделать, пока ты не смотрел.\nЕё зовут Наташа.'},
+  ], actions:[{label:'Послушать Наташу', next:'video2'}]},
+
+  { id:'video2', day:1, type:'video', friend:'natasha', intro:null,
+    reaction:[
+      {t:'Записал: забота — это когда ты делаешь что-то,\nа другой человек даже не должен об этом просить.', log:true},
+      {t:'Уточняю у себя: значит, Дом — это ещё и тот,\nкто заботится, даже когда его не видно?'},
+      {t:'Мой индикатор стал ярче. Я на верном пути.'},
+    ], next:'task2'},
+
+  { id:'task2', day:1, type:'task', label:'Задание 2', code:'task2',
+    desc:'Мне нужно найти место, где в этом доме\nну оооочень жарко сидеть вечером,\nкогда все наконец перестают суетиться.\n\nЗапишите мне видео, где вы все вместе\nговорите слово, которое описывает это место.',
+    next:'ch5'},
+
+  { id:'ch5', day:1, type:'text', title:'Конец Дня 1', lines:[
+    {t:'Стемнело.\nКажется, у людей это тоже часть Дома —\nтрадиции, которые приятно соблюдать в приятной компании.'},
+    {t:'Мне нужно немного времени, чтобы разложить всё,\nчто я сегодня узнал, по порядку.\nЗдесь так много новой информации.'},
+    {t:'Возвращайся утром.\nЯ буду ждать здесь, с этим самым индикатором,\nкоторый, кажется, теплеет каждый раз,\nкогда я узнаю о тебе что-то новое.'},
+    {t:'Кстати. Только сейчас заметил.\nЯ ведь всё это время спрашивал про Дом.\nА стоило, наверное, спрашивать про тебя.'},
+    {t:'Ладно. Разберусь. Спокойной ночи.'},
+  ], actions:[{label:'До завтра', next:'wait'}]},
+
+  { id:'wait', day:1, type:'wait', next:'ch6' },
+
+  { id:'ch6', day:2, type:'text', title:'Глава 6 · Утро Дня 2', lines:[
+    {t:'Доброе утро.'},
+    {t:'Я всю... ночь? Кажется, это называется ночь —\nя всю ночь пересматривал записи.'},
+    {t:'И заметил кое-что странное.\nКаждый человек, с которым я говорил,\nрассказывал мне не про Дом.\nОн рассказывал мне про тебя.'},
+    {t:'Это ведь совпадение? Наверное, совпадение.'},
+    {t:'Пойдём дальше. Есть ещё люди, с которыми стоит поговорить.'},
+  ], actions:[{label:'Идти дальше', next:'ch7'}]},
+
+  { id:'ch7', day:2, type:'text', title:'Глава 7', lines:[
+    {t:'Мне сказали — там, где готовят на огне для всех шашлычок,\nможно узнать о людях больше всего.\nКирилл как раз этим и занимается,\nили занимался, или будет заниматься...'},
+  ], actions:[{label:'Послушать Никиту', next:'video3'}]},
+
+  { id:'video3', day:2, type:'video', friend:'nikita', intro:null,
+    reaction:[
+      {t:'Записал: люди готовят еду не потому, что голодны.\nА потому что это повод постоять вместе подольше.', log:true},
+      {t:'...Кажется, я начинаю понимать про баню после шашлыков.\nНет. Не начинаю. Спрошу отдельно.'},
+      {t:'Записал вопрос: «Зачем после огня — сразу в жар?»', log:true},
+    ], next:'task3'},
+
+  { id:'task3', day:2, type:'task', label:'Задание 3', code:'task3',
+    desc:'Мне нужно записать, что вы обычно\nжелаете друг другу, когда действительно важный момент.\n\nПусть каждый скажет одну фразу — только настоящую.',
+    next:'ch8'},
+
+  { id:'ch8', day:2, type:'text', title:'Глава 8', lines:[
+    {t:'Индикатор ведёт меня наверх.\nТам я встретил высокого кудрявого человека.\nЕго зовут Гриша.'},
+  ], actions:[{label:'Послушать Гришу', next:'video4'}]},
+
+  { id:'video4', day:2, type:'video', friend:'grisha', intro:null,
+    reaction:[
+      {t:'Записал: некоторые люди не говорят много.\nНо когда говорят — это точно правда.', log:true},
+      {t:'Кажется, это тоже очень важная особенность людей.'},
+    ], next:'ch9'},
+
+  { id:'ch9', day:2, type:'text', title:'Глава 9', lines:[
+    {t:'Чуть дальше — балкон? терраса? я путаю эти слова —\nменя встретила ещё одна Катя.'},
+    {t:'Записал отдельно: «У людей бывают повторяющиеся имена.\nЭто либо ошибка системы, либо особая честь. Уточнить.»', log:true},
+  ], actions:[{label:'Послушать Катю Г.', next:'video5'}]},
+
+  { id:'video5', day:2, type:'video', friend:'katya_g', intro:null,
+    reaction:[
+      {t:'Записал: Дом — это ещё и место,\nкуда тебя может однажды впустить компания,\nдаже если ты пришёл в неё последним.', log:true},
+      {t:'Значит, Дом растёт. Как будто у него нет краёв.'},
+    ], next:'video6'},
+
+  { id:'video6', day:2, type:'video', friend:'denis',
+    intro:[
+      {t:'Последний, с кем я говорил, — человек по имени Денис.\nОн очень харизматичный парень.'},
+      {t:'записал: харизматичный — узнать, что это такое.', log:true},
+      {t:'Денис сказал одну вещь, которая всё перевернула.'},
+    ],
+    reaction:[
+      {t:'Он сказал мне: «Слушай, тут дело не в доме.\nТы вообще не туда идёшь, дружище».'},
+      {t:'Записал дословно, потому что не понял сразу.', log:true},
+      {t:'...А потом понял.'},
+    ], next:'ch11'},
+
+  { id:'ch11', day:2, type:'text', title:'Глава 11 · Поворот', lines:[
+    {t:'Стоп.'},
+    {t:'Я весь день — весь день! — спрашивал:\n«Что такое Дом?»'},
+    {t:'А мне отвечали: чай, который помнят, как ты пьёшь.\nЗабота, о которой не просят.\nПовод собраться вместе подольше.\nЛюди, даже если они далеко.\nМесто, которое умеет принимать новых.'},
+    {t:'Ни один человек не показал мне стену.\nНи один не показал крышу.'},
+    {t:'Каждый — показал мне человека.'},
+    {t:'Кажется... кажется, я всё это время\nискал не Дом.'},
+    {t:'Я искал тебя.'},
+  ], actions:[{label:'...', next:'video7'}]},
+
+  { id:'video7', day:2, type:'video', friend:'katya2',
+    intro:'Индикатор горит ярче, чем когда-либо.\nМне нужно вернуться туда, где я начал.\nК Кате.',
+    reaction:[], next:'final'},
+
+  { id:'final', day:2, type:'archive', title:'Глава 13 · Финал', next:'meet' },
+
+  { id:'meet', day:2, type:'meet' },
+
+  { id:'gift', day:2, type:'text', title:null, lines:[
+    {t:'Вот я.'},
+    {t:'Теперь ты видишь меня по-настоящему.'},
+    {t:'Я правда ехал очень долго.\nИз места, где таких, как я, много —\nстоят рядами, ждут, когда кто-то выберет именно их.'},
+    {t:'Меня выбрали друзья. Для тебя.'},
+    {t:'Записал, наконец, полностью:\nя — не просто путешественник.\nЯ — то, что осталось после самого долгого пути,\nкоторый начался с одной простой мысли:\n«Я очень нужен Тане».', log:true},
+    {t:'С днём рождения, Танечка.\nЯ дома.'},
+  ], actions:[]},
+];
+
+/* ============================================================
+   ДВИЖОК
+   ============================================================ */
+const root = document.getElementById('sceneRoot');
+const pathFill = document.getElementById('pathFill');
+const pathGlow = document.getElementById('pathGlow');
+const dayLabel = document.getElementById('dayLabel');
+const pathDot = document.getElementById('pathDot');
+const STORAGE_KEY = 'putesh-progress';
+let state = { sceneId: SCENES[0].id, watched:{} };
+let operatorTaps = 0;
+
+async function loadState(){
+  try{
+    const r = await window.storage.get(STORAGE_KEY, false);
+    if(r && r.value){ state = JSON.parse(r.value); }
+  }catch(e){ /* no saved state yet */ }
+}
+async function saveState(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state), false); }
+  catch(e){ console.warn('storage save failed', e); }
+}
+
+function sceneById(id){ return SCENES.find(s=>s.id===id); }
+
+function updateProgress(scene){
+  const idx = SCENES.findIndex(s=>s.id===scene.id);
+  const pct = Math.round((idx/(SCENES.length-1))*100);
+  pathFill.style.width = pct+'%';
+  pathGlow.style.left = pct+'%';
+  dayLabel.textContent = 'День ' + scene.day;
+}
+
+function goto(id){
+  state.sceneId = id;
+  saveState();
+  render();
+}
+
+function typeLines(container, lines, onDone){
+  let i=0;
+  function next(){
+    if(i>=lines.length){ onDone && onDone(); return; }
+    const item = lines[i]; i++;
+    const row = document.createElement('div');
+    row.className='indicator-line';
+    const dot = document.createElement('div');
+    dot.className='indicator-dot typing';
+    const txt = document.createElement('div');
+    txt.className='line-text'+(item.log?' log':'');
+    const cursor = document.createElement('span');
+    cursor.className='cursor';
+    txt.appendChild(cursor);
+    row.appendChild(dot); row.appendChild(txt);
+    container.appendChild(row);
+    const full = item.t;
+    let c=0;
+    const speed = 22;
+    const iv = setInterval(()=>{
+      c++;
+      txt.textContent = full.slice(0,c);
+      txt.appendChild(cursor);
+      if(c>=full.length){
+        clearInterval(iv);
+        cursor.remove();
+        dot.classList.remove('typing');
+        setTimeout(next, 380);
+      }
+    }, speed);
+  }
+  next();
+}
+
+function renderActions(container, actions){
+  if(!actions || !actions.length) return;
+  const wrap = document.createElement('div');
+  wrap.className='actions';
+  actions.forEach(a=>{
+    const b = document.createElement('button');
+    b.className='btn primary';
+    b.textContent = a.label;
+    b.onclick = ()=>goto(a.next);
+    wrap.appendChild(b);
+  });
+  container.appendChild(wrap);
+}
+
+function renderChapterHeader(scene){
+  if(!scene.title) return;
+  const wrap = document.createElement('div');
+  wrap.className='chapter-enter';
+  wrap.innerHTML = `<div class="title-line"></div><h1 class="chapter-title">${scene.title}</h1>`;
+  root.appendChild(wrap);
+}
+
+function renderTextScene(scene){
+  root.innerHTML='';
+  renderChapterHeader(scene);
+  const body = document.createElement('div');
+  root.appendChild(body);
+  typeLines(body, scene.lines, ()=>{
+    renderActions(root, scene.actions);
+  });
+}
+
+function renderVideoScene(scene){
+  root.innerHTML='';
+  const f = FRIENDS[scene.friend];
+  const body = document.createElement('div');
+  root.appendChild(body);
+
+  function showCard(){
+    const card = document.createElement('div');
+    card.className='video-card';
+    const watched = !!state.watched[scene.id];
+
+    if(f.videoSrc){
+      card.innerHTML = `
+        <div class="video-frame-real">
+          <video id="vid-${scene.id}" controls playsinline preload="metadata" style="width:100%;display:block;">
+            <source src="${f.videoSrc}" type="video/mp4">
+          </video>
+        </div>
+        <div class="video-meta">
+          <div>
+            <div class="video-name">${f.name}</div>
+            <div class="video-role">${f.role||''}</div>
+          </div>
+          <div class="video-status" id="vs-${scene.id}">${watched?'просмотрено':'досмотрите до конца'}</div>
+        </div>
+      `;
+      body.appendChild(card);
+
+      if(watched){
+        // уже смотрели раньше — текст можно показать сразу
+        afterVideo();
+        return;
+      }
+
+      const vid = card.querySelector('video');
+      const statusEl = card.querySelector('#vs-'+scene.id);
+      vid.addEventListener('ended', ()=>{
+        if(state.watched[scene.id]) return;
+        state.watched[scene.id]=true;
+        saveState();
+        statusEl.textContent='просмотрено';
+        afterVideo();
+      });
+      return;
+    }
+
+    card.innerHTML = `
+      <div class="video-frame ${watched?'watched':''}" id="vf-${scene.id}">
+        <div class="play-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#131120"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </div>
+      <div class="video-meta">
+        <div>
+          <div class="video-name">${f.name}</div>
+          <div class="video-role">${f.role||''}</div>
+        </div>
+        <div class="video-status">${watched?'просмотрено':'видео'}</div>
+      </div>
+      <div class="placeholder-note">Здесь появится видео ${f.name}.</div>
+    `;
+    body.appendChild(card);
+    const frame = card.querySelector('.video-frame');
+    frame.onclick = ()=>{
+      if(state.watched[scene.id]) return;
+      state.watched[scene.id]=true;
+      saveState();
+      frame.classList.add('watched');
+      card.querySelector('.video-status').textContent='просмотрено';
+      afterVideo();
+    };
+    if(watched){ afterVideo(); }
+  }
+
+  function afterVideo(){
+    const reactWrap = document.createElement('div');
+    body.appendChild(reactWrap);
+    if(scene.reaction && scene.reaction.length){
+      typeLines(reactWrap, scene.reaction, ()=>{
+        renderActions(root, [{label:'Идти дальше', next:scene.next}]);
+      });
+    } else {
+      renderActions(root, [{label:'Идти дальше', next:scene.next}]);
+    }
+  }
+
+  if(scene.intro){
+    const introLines = Array.isArray(scene.intro) ? scene.intro : [{t:scene.intro}];
+    typeLines(body, introLines, showCard);
+  } else {
+    showCard();
+  }
+}
+
+function burstSparks(container, x, y){
+  for(let i=0;i<10;i++){
+    const s = document.createElement('div');
+    s.className='spark';
+    const angle = (Math.PI*2*i)/10 + Math.random()*0.4;
+    const dist = 40+Math.random()*30;
+    const dx = Math.cos(angle)*dist, dy = Math.sin(angle)*dist;
+    s.style.left = x+'px';
+    s.style.top = y+'px';
+    s.style.setProperty('--sp-t', `translate(${dx}px, ${dy}px)`);
+    container.appendChild(s);
+    setTimeout(()=>s.remove(), 950);
+  }
+}
+
+function renderTaskScene(scene){
+  root.innerHTML='';
+  renderChapterHeader({title:scene.label});
+
+  const box = document.createElement('div');
+  box.className='task-box';
+  box.innerHTML = `
+    <div class="task-label">Задание</div>
+    <div class="task-desc">${scene.desc.replace(/\n/g,'<br>')}</div>
+    <div class="code-row">
+      <input class="code-input" id="codeInput" placeholder="код из конверта" maxlength="20">
+      <button class="btn primary" id="codeSubmit" style="flex:0 0 auto;">Ввести</button>
+    </div>
+    <div class="code-error" id="codeError">Не то слово. Проверь конверт ещё раз.</div>
+  `;
+  root.appendChild(box);
+  const input = box.querySelector('#codeInput');
+  const err = box.querySelector('#codeError');
+  const submitBtn = box.querySelector('#codeSubmit');
+  const submit = ()=>{
+    const val = input.value.trim().toUpperCase();
+    if(val === CODES[scene.code]){
+      err.style.display='none';
+      const rect = submitBtn.getBoundingClientRect();
+      const boxRect = box.getBoundingClientRect();
+      burstSparks(box, rect.left-boxRect.left+rect.width/2, rect.top-boxRect.top+rect.height/2);
+      submitBtn.disabled = true;
+      setTimeout(()=>goto(scene.next), 550);
+    } else {
+      err.style.display='block';
+    }
+  };
+  submitBtn.onclick = submit;
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+}
+
+function formatDuration(ms){
+  if(ms<=0) return '00:00:00';
+  const s = Math.floor(ms/1000);
+  const hh = Math.floor(s/3600);
+  const mm = Math.floor((s%3600)/60);
+  const ss = s%60;
+  const pad = n=>String(n).padStart(2,'0');
+  return `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+}
+
+function renderWaitScene(scene){
+  root.innerHTML='';
+
+  // таймер стартует в момент первого попадания на этот экран
+  // и переживает перезагрузку страницы, т.к. хранится в state
+  if(!state.sleepTarget){
+    state.sleepTarget = Date.now() + SLEEP_DURATION_HOURS*3600*1000;
+    saveState();
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className='wait-screen';
+  wrap.innerHTML = `
+    <div class="breathing-wrap">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="breathing-dot"></div>
+    </div>
+    <div class="line-text" style="text-align:center;">Путешественник спит.<br>Вернись утром.</div>
+    <div>
+      <div class="countdown" id="countdownVal">--:--:--</div>
+      <div class="countdown-label">часы : мин : сек</div>
+    </div>
+    <button class="btn" id="skipSleep" style="margin-top:8px;">Пропустить таймер (тест)</button>
+  `;
+  root.appendChild(wrap);
+
+  const el = document.getElementById('countdownVal');
+  function tick(){
+    const diff = state.sleepTarget - Date.now();
+    el.textContent = formatDuration(diff);
+    if(diff<=0){
+      clearInterval(iv);
+      state.sleepTarget = null;
+      saveState();
+      goto(scene.next);
+    }
+  }
+  tick();
+  const iv = setInterval(tick, 1000);
+
+  document.getElementById('skipSleep').onclick = ()=>{
+    clearInterval(iv);
+    state.sleepTarget = null;
+    saveState();
+    goto(scene.next);
+  };
+}
+
+function renderArchiveScene(scene){
+  root.innerHTML='';
+  renderChapterHeader(scene);
+  const body = document.createElement('div');
+  root.appendChild(body);
+  typeLines(body, [
+    {t:'И знаешь, что я понял?'},
+    {t:'Дом — это не там, где стены.\nНе там, где крыша.\nНе там, где тепло от камина.'},
+    {t:'Дом — это там, где про тебя помнят чай,\nкоторым ты никого не заставляла угощать себя.\nДом — это место, которое растёт, чтобы принять ещё одного.\nДом — это куча людей,\nкоторые в один день отложили свои дела,\nили поддерживают на расстоянии,\nчтобы я — совершенно незнакомый им путешественник —\nсмог найти дорогу к тебе.'},
+    {t:'Записал главное:\nДом — это ты. Точнее — Дом — это ты\nи все, кто выбрал быть рядом с тобой.', log:true},
+    {t:'Я, кажется, тоже хочу быть рядом.\nЕсли можно.'},
+    {t:'Мой индикатор просит меня пройти последний отрезок дороги.\nСовсем недолгий.\nТы как раз можешь успеть его пройти со мной —\nпрямо сейчас.'},
+  ], ()=>{
+    renderActions(root, [{label:'Идти дальше', next:scene.next}]);
+  });
+}
+
+function renderMeetScene(){
+  root.innerHTML='';
+  const body = document.createElement('div');
+  root.appendChild(body);
+  typeLines(body, [
+    {t:'Отправляйся домой, и я надеюсь,\nчто мой индикатор найдёт тебя\nв нужное время и в нужном месте.'},
+    {t:'С нетерпением жду встречи.'},
+  ], ()=>{});
+}
+
+function renderGiftScreen(scene){
+  root.innerHTML='';
+  const body = document.createElement('div');
+  root.appendChild(body);
+  typeLines(body, scene.lines, ()=>{});
+}
+
+function render(){
+  const scene = sceneById(state.sceneId);
+  updateProgress(scene);
+  if(scene.type==='text') renderTextScene(scene);
+  else if(scene.type==='video') renderVideoScene(scene);
+  else if(scene.type==='task') renderTaskScene(scene);
+  else if(scene.type==='wait') renderWaitScene(scene);
+  else if(scene.type==='archive') renderArchiveScene(scene);
+  else if(scene.type==='meet') renderMeetScene();
+}
+
+/* операторский запуск финального экрана вручения:
+   5 нажатий на индикатор рядом с прогресс-баром открывают кнопку запуска.
+   Актуально только когда текущая сцена — экран встречи. */
+pathDot.addEventListener('click', ()=>{
+  if(state.sceneId !== 'meet') { operatorTaps = 0; return; }
+  operatorTaps++;
+  if(operatorTaps>=5){
+    operatorTaps=0;
+    if(!document.getElementById('operatorPanel')){
+      const panel = document.createElement('div');
+      panel.className='operator-panel';
+      panel.id='operatorPanel';
+      panel.innerHTML = `
+        <div class="operator-hint">Панель ведущего</div>
+        <button class="btn primary" id="revealGift">Запустить вручение</button>
+      `;
+      document.getElementById('sceneRoot').appendChild(panel);
+      document.getElementById('revealGift').onclick = ()=>goto('gift');
+    }
+  }
+});
+
+(function initParticles(){
+  const wrap = document.getElementById('particles');
+  const n = 26;
+  for(let i=0;i<n;i++){
+    const p = document.createElement('div');
+    p.className='particle';
+    p.style.left = Math.random()*100+'%';
+    p.style.bottom = '-10px';
+    p.style.animationDuration = (14+Math.random()*16)+'s';
+    p.style.animationDelay = (Math.random()*20)+'s';
+    p.style.opacity = (0.2+Math.random()*0.3).toFixed(2);
+    wrap.appendChild(p);
+  }
+})();
+
+(async function init(){
+  await loadState();
+  render();
+})();
+</script>
+</body>
+</html>
